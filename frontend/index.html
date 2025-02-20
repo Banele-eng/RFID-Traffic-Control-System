@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Truck Driver Registration</title>
+</head>
+<body>
+    <h2>Truck Driver Registration</h2>
+    <form id="registrationForm">
+        <label for="name">Driver Name:</label>
+        <input type="text" id="name" name="name" required><br>
+
+        <label for="license">License Number:</label>
+        <input type="text" id="license" name="license" required><br>
+
+        <label for="truckNumber">Truck Number:</label>
+        <input type="text" id="truckNumber" name="truckNumber" required><br>
+
+        <button type="submit">Register</button>
+    </form>
+
+    <script>
+        document.getElementById("registrationForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+            
+            const formData = {
+                name: document.getElementById("name").value,
+                license: document.getElementById("license").value,
+                truckNumber: document.getElementById("truckNumber").value
+            };
+
+            const response = await fetch("http://localhost:3000/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+            alert(result.message);
+        });
+    </script>
+</body>
+</html>
