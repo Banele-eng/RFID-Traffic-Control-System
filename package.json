@@ -21,6 +21,7 @@
   "homepage": "https://github.com/Banele-eng/RFID-Traffic-Control-System#readme",
   "dependencies": {
     "dotenv": "^16.4.7",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "mongoose": "^8.10.1"
   }
 }
