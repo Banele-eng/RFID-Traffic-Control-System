@@ -2,40 +2,52 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const bodyParser = require("body-parser");
 
+// Initialize Express app
 const app = express();
+app.use(express.json());
 app.use(cors());
-app.use(bodyParser.json());
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
-}).then(() => console.log("Connected to MongoDB Atlas"))
-.catch(err => console.error("MongoDB Connection Error:", err));
+})
+.then(() => console.log("MongoDB Connected"))
+.catch(err => console.log(err));
 
 // Driver Schema
 const driverSchema = new mongoose.Schema({
     name: String,
-    license: String,
     truckNumber: String,
-    registeredAt: { type: Date, default: Date.now }
+    rfidTag: String,
+    entryTime: { type: Date, default: Date.now }
 });
+
 const Driver = mongoose.model("Driver", driverSchema);
 
-// Register Driver
+// Register a new truck driver
 app.post("/register", async (req, res) => {
     try {
-        const { name, license, truckNumber } = req.body;
-        const newDriver = new Driver({ name, license, truckNumber });
+        const { name, truckNumber, rfidTag } = req.body;
+        const newDriver = new Driver({ name, truckNumber, rfidTag });
         await newDriver.save();
-        res.json({ message: "Driver registered successfully!" });
+        res.status(201).json({ message: "Driver registered successfully", driver: newDriver });
     } catch (error) {
         res.status(500).json({ message: "Error registering driver", error });
     }
 });
 
-// Start Server
+// Fetch all registered drivers (for police station access)
+app.get("/drivers", async (req, res) => {
+    try {
+        const drivers = await Driver.find();
+        res.json(drivers);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching drivers", error });
+    }
+});
+
+// Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
