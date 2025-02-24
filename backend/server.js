@@ -1,53 +1,62 @@
-require("dotenv").config();
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
+const express = require('express');
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+const cors = require('cors');
 
-// Initialize Express app
 const app = express();
-app.use(express.json());
+const port = 3000;
+
+// Middleware
 app.use(cors());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-})
-.then(() => console.log("MongoDB Connected"))
-.catch(err => console.log(err));
+// MongoDB connection
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log('Connected to MongoDB'))
+    .catch(err => console.error('MongoDB connection error:', err));
 
-// Driver Schema
-const driverSchema = new mongoose.Schema({
-    name: String,
-    truckNumber: String,
-    rfidTag: String,
-    entryTime: { type: Date, default: Date.now }
+// Truck registration schema
+const truckSchema = new mongoose.Schema({
+    truckId: String,
+    driverName: String,
+    licensePlate: String,
+    contactNumber: String,
+    vehicleType: String,
+    entryTime: Date
 });
 
-const Driver = mongoose.model("Driver", driverSchema);
+const Truck = mongoose.model('Truck', truckSchema);
 
-// Register a new truck driver
-app.post("/register", async (req, res) => {
+// POST route to handle form submissions
+app.post('/submit', async (req, res) => {
+    const { truckId, driverName, licensePlate, contactNumber, vehicleType, entryTime } = req.body;
+    
+    // Validate data (this can be extended with more checks)
+    if (!truckId || !driverName || !licensePlate || !contactNumber || !vehicleType || !entryTime) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
+
     try {
-        const { name, truckNumber, rfidTag } = req.body;
-        const newDriver = new Driver({ name, truckNumber, rfidTag });
-        await newDriver.save();
-        res.status(201).json({ message: "Driver registered successfully", driver: newDriver });
-    } catch (error) {
-        res.status(500).json({ message: "Error registering driver", error });
+        // Save the truck registration to MongoDB
+        const truck = new Truck({
+            truckId,
+            driverName,
+            licensePlate,
+            contactNumber,
+            vehicleType,
+            entryTime
+        });
+        await truck.save();
+        res.status(200).json({ message: 'Registration successful' });
+    } catch (err) {
+        res.status(500).json({ message: 'Error saving data', error: err });
     }
 });
 
-// Fetch all registered drivers (for police station access)
-app.get("/drivers", async (req, res) => {
-    try {
-        const drivers = await Driver.find();
-        res.json(drivers);
-    } catch (error) {
-        res.status(500).json({ message: "Error fetching drivers", error });
-    }
-});
+// Serve static files (if your frontend is in the same project directory)
+app.use(express.static('public'));
 
-// Start the server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+});
