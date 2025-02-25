@@ -1,62 +1,68 @@
+require('dotenv').config(); // Load environment variables from .env
+
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const { check, validationResult } = require('express-validator');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(express.static('public')); // Serve static files if needed
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log('Connected to MongoDB'))
-    .catch(err => console.error('MongoDB connection error:', err));
+// MongoDB Connection
+const mongoURI = process.env.MONGO_URI;
+if (!mongoURI) {
+    console.error('MongoDB connection URI is missing! Set MONGO_URI in your .env file.');
+    process.exit(1); // Exit the application if no DB URI is found
+}
 
-// Truck registration schema
+mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log('✅ Connected to MongoDB'))
+    .catch(err => {
+        console.error('❌ MongoDB connection error:', err);
+        process.exit(1);
+    });
+
+// Truck Registration Schema
 const truckSchema = new mongoose.Schema({
-    truckId: String,
-    driverName: String,
-    licensePlate: String,
-    contactNumber: String,
-    vehicleType: String,
-    entryTime: Date
+    truckId: { type: String, required: true },
+    driverName: { type: String, required: true },
+    licensePlate: { type: String, required: true },
+    contactNumber: { type: String, required: true },
+    vehicleType: { type: String, required: true },
+    entryTime: { type: Date, required: true, default: Date.now }
 });
 
 const Truck = mongoose.model('Truck', truckSchema);
 
-// POST route to handle form submissions
-app.post('/submit', async (req, res) => {
-    const { truckId, driverName, licensePlate, contactNumber, vehicleType, entryTime } = req.body;
-    
-    // Validate data (this can be extended with more checks)
-    if (!truckId || !driverName || !licensePlate || !contactNumber || !vehicleType || !entryTime) {
-        return res.status(400).json({ message: 'All fields are required' });
+// POST Route for Truck Registration
+app.post('/submit', [
+    check('truckId').notEmpty().withMessage('Truck ID is required'),
+    check('driverName').notEmpty().withMessage('Driver Name is required'),
+    check('licensePlate').notEmpty().withMessage('License Plate is required'),
+    check('contactNumber').notEmpty().withMessage('Contact Number is required'),
+    check('vehicleType').notEmpty().withMessage('Vehicle Type is required'),
+    check('entryTime').isISO8601().toDate().withMessage('Invalid entry time format')
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ message: 'Validation errors', errors: errors.array() });
     }
 
     try {
-        // Save the truck registration to MongoDB
-        const truck = new Truck({
-            truckId,
-            driverName,
-            licensePlate,
-            contactNumber,
-            vehicleType,
-            entryTime
-        });
+        const { truckId, driverName, licensePlate, contactNumber, vehicleType, entryTime } = req.body;
+        const truck = new Truck({ truckId, driverName, licensePlate, contactNumber, vehicleType, entryTime });
         await truck.save();
-        res.status(200).json({ message: 'Registration successful' });
+        res.status(201).json({ message: '✅ Registration successful', truck });
     } catch (err) {
-        res.status(500).json({ message: 'Error saving data', error: err });
+        res.status(500).json({ message: '❌ Error saving data', error: err.message });
     }
 });
 
-// Serve static files (if your frontend is in the same project directory)
-app.use(express.static('public'));
-
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-});
+// Start Server
+app.listen(port, () => console.log(`🚀 Server running at http://localhost:${port}`));

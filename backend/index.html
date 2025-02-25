@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Truck Registration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+        h2 {
+            text-align: center;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            width: 100%;
+            background: #28a745;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #218838;
+        }
+        .message {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Truck Registration</h2>
+        <form id="truckForm">
+            <label for="truckId">Truck ID:</label>
+            <input type="text" id="truckId" name="truckId" required>
+
+            <label for="driverName">Driver Name:</label>
+            <input type="text" id="driverName" name="driverName" required>
+
+            <label for="licensePlate">License Plate:</label>
+            <input type="text" id="licensePlate" name="licensePlate" required>
+
+            <label for="contactNumber">Contact Number:</label>
+            <input type="text" id="contactNumber" name="contactNumber" required>
+
+            <label for="vehicleType">Vehicle Type:</label>
+            <input type="text" id="vehicleType" name="vehicleType" required>
+
+            <label for="entryTime">Entry Time:</label>
+            <input type="datetime-local" id="entryTime" name="entryTime" required>
+
+            <button type="submit">Register Truck</button>
+            <p class="message" id="responseMessage"></p>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('truckForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const formData = {
+                truckId: document.getElementById('truckId').value,
+                driverName: document.getElementById('driverName').value,
+                licensePlate: document.getElementById('licensePlate').value,
+                contactNumber: document.getElementById('contactNumber').value,
+                vehicleType: document.getElementById('vehicleType').value,
+                entryTime: document.getElementById('entryTime').value
+            };
+
+            try {
+                const response = await fetch('/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+                const messageEl = document.getElementById('responseMessage');
+
+                if (response.ok) {
+                    messageEl.style.color = 'green';
+                    messageEl.textContent = '✅ Registration successful!';
+                    document.getElementById('truckForm').reset();
+                } else {
+                    messageEl.style.color = 'red';
+                    messageEl.textContent = '❌ ' + result.message;
+                }
+            } catch (error) {
+                document.getElementById('responseMessage').style.color = 'red';
+                document.getElementById('responseMessage').textContent = '❌ Error submitting data';
+            }
+        });
+    </script>
+
+</body>
+</html>
